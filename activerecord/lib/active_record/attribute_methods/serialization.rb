@@ -133,7 +133,6 @@ module ActiveRecord
               raise ColumnNotSerializableError.new(attr_name, cast_type)
             end
 
-            cast_type = cast_type.subtype if Type::Serialized === cast_type
             Type::Serialized.new(cast_type, coder)
           end
         end

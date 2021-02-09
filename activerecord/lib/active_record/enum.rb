@@ -152,10 +152,8 @@ module ActiveRecord
         end
       end
 
-      attr_reader :subtype
-
       private
-        attr_reader :name, :mapping
+        attr_reader :name, :mapping, :subtype
     end
 
     def enum(definitions)
@@ -189,7 +187,6 @@ module ActiveRecord
         attr = attribute_alias?(name) ? attribute_alias(name) : name
 
         attribute(attr, **options) do |subtype|
-          subtype = subtype.subtype if EnumType === subtype
           EnumType.new(attr, enum_values, subtype)
         end
 

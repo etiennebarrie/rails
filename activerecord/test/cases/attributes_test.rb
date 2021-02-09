@@ -281,6 +281,26 @@ module ActiveRecord
       assert_equal(:bar, child.new(foo: :bar).foo)
     end
 
+    test "inherited decorated attribute" do
+      type = Class.new(ActiveModel::Type::Value) do
+        def initialize(subtype)
+          @subtype = subtype
+        end
+        def serialize(value)
+          @subtype.serialize(value * 2)
+        end
+      end
+      klass = Class.new(ActiveRecord::Base) do
+        self.table_name = "topics"
+        attribute(:content) { |subtype| type.new(subtype) }
+      end
+      subclass = Class.new(klass) do
+        attribute(:content) { |subtype| type.new(subtype) }
+      end
+      assert_equal "4", klass.create!(content: 2).content
+      assert_equal "6", subclass.create!(content: 3).content
+    end
+
     test "attributes not backed by database columns are not dirty when unchanged" do
       assert_not_predicate OverloadedType.new, :non_existent_decimal_changed?
     end

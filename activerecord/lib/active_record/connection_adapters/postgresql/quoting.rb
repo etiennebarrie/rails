@@ -121,6 +121,10 @@ module ActiveRecord
           type_map.lookup(column.oid, column.fmod, column.sql_type)
         end
 
+        def lookup_cast_type(sql_type) # :nodoc:
+          super(query_value("SELECT #{quote(sql_type)}::regtype::oid", "SCHEMA").to_i)
+        end
+
         def column_name_matcher
           COLUMN_NAME
         end
@@ -159,10 +163,6 @@ module ActiveRecord
         private_constant :COLUMN_NAME, :COLUMN_NAME_WITH_ORDER
 
         private
-          def lookup_cast_type(sql_type)
-            super(query_value("SELECT #{quote(sql_type)}::regtype::oid", "SCHEMA").to_i)
-          end
-
           def encode_array(array_data)
             encoder = array_data.encoder
             values = type_cast_array(array_data.values)

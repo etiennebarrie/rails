@@ -64,6 +64,10 @@ module ActiveRecord
         lookup_cast_type(column.sql_type)
       end
 
+      def lookup_cast_type(sql_type) # :nodoc:
+        type_map.lookup(sql_type)
+      end
+
       # Quotes a string, escaping any ' (single quote) and \ (backslash)
       # characters.
       def quote_string(s)
@@ -211,10 +215,6 @@ module ActiveRecord
               type_cast(value)
             end
           end
-        end
-
-        def lookup_cast_type(sql_type)
-          type_map.lookup(sql_type)
         end
     end
   end

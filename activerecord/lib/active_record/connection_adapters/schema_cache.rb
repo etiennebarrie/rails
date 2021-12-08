@@ -4,7 +4,7 @@ require "active_support/core_ext/file/atomic"
 
 module ActiveRecord
   module ConnectionAdapters
-    class SchemaCache
+    class SchemaCache # :nodoc:
       def self.load_from(filename)
         return unless File.file?(filename)
 
@@ -48,6 +48,7 @@ module ActiveRecord
         @primary_keys = {}
         @data_sources = {}
         @indexes      = {}
+        @types        = {}
       end
 
       def initialize_dup(other)
@@ -57,6 +58,7 @@ module ActiveRecord
         @primary_keys = @primary_keys.dup
         @data_sources = @data_sources.dup
         @indexes      = @indexes.dup
+        @types        = @types.dup
       end
 
       def encode_with(coder)
@@ -66,6 +68,7 @@ module ActiveRecord
         coder["primary_keys"]     = @primary_keys
         coder["data_sources"]     = @data_sources
         coder["indexes"]          = @indexes
+        coder["types"]            = @types
         coder["version"]          = @version
         coder["database_version"] = database_version
       end
@@ -75,6 +78,7 @@ module ActiveRecord
         @primary_keys     = coder["primary_keys"]
         @data_sources     = coder["data_sources"]
         @indexes          = coder["indexes"] || {}
+        @types            = coder["types"] || {}
         @version          = coder["version"]
         @database_version = coder["database_version"]
 
@@ -102,7 +106,9 @@ module ActiveRecord
       def add(table_name)
         if data_source_exists?(table_name)
           primary_keys(table_name)
-          columns(table_name)
+          columns(table_name).each do |column|
+            type(column.sql_type)
+          end
           columns_hash(table_name)
           indexes(table_name)
         end
@@ -143,6 +149,12 @@ module ActiveRecord
           else
             []
           end
+        end
+      end
+
+      def type(sql_type)
+        @types.fetch(sql_type) do
+          @types[deep_deduplicate(sql_type)] = deep_deduplicate(connection.lookup_cast_type(sql_type))
         end
       end
 

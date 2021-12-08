@@ -26,6 +26,7 @@ module ActiveRecord
         assert_equal 12, cache.columns_hash("posts").size
         assert cache.data_sources("posts")
         assert_equal "id", cache.primary_keys("posts")
+        assert_not_nil cache.type(cache.columns_hash("posts")["id"].sql_type)
         assert_equal 1, cache.indexes("posts").size
         assert_equal @database_version.to_s, cache.database_version.to_s
       ensure
@@ -135,6 +136,11 @@ module ActiveRecord
 
       def test_indexes_for_non_existent_table
         assert_equal [], @cache.indexes("omgponies")
+      end
+
+      def test_type
+        sql_type = @connection.columns("posts").detect { |column| column.name == "id" }.sql_type
+        assert_equal @connection.lookup_cast_type(sql_type), @cache.type(sql_type)
       end
 
       def test_caches_database_version

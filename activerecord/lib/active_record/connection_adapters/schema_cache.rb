@@ -33,7 +33,12 @@ module ActiveRecord
       private_class_method :read
 
       attr_reader :version
-      attr_accessor :connection
+      attr_writer :connection
+
+      def connection
+        return @connection if defined?(@connection) && @connection
+        raise(ConnectionNotEstablished, "no connection provided to schema cache")
+      end
 
       def initialize(conn)
         @connection = conn

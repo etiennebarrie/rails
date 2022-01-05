@@ -192,22 +192,7 @@ module ActiveRecord
       # opened and set as the active connection for the class it was defined
       # for (not necessarily the current class).
       def retrieve_connection(spec_name, role: ActiveRecord::Base.current_role, shard: ActiveRecord::Base.current_shard) # :nodoc:
-        pool = retrieve_connection_pool(spec_name, role: role, shard: shard)
-
-        unless pool
-          if shard != ActiveRecord::Base.default_shard
-            message = "No connection pool for '#{spec_name}' found for the '#{shard}' shard."
-          elsif ActiveRecord::Base.connection_handler != ActiveRecord::Base.default_connection_handler
-            message = "No connection pool for '#{spec_name}' found for the '#{ActiveRecord::Base.current_role}' role."
-          elsif role != ActiveRecord::Base.default_role
-            message = "No connection pool for '#{spec_name}' found for the '#{role}' role."
-          else
-            message = "No connection pool for '#{spec_name}' found."
-          end
-
-          raise ConnectionNotEstablished, message
-        end
-
+        pool = retrieve_connection_pool(spec_name, role: role, shard: shard, raise: true)
         pool.connection
       end
 
@@ -232,9 +217,23 @@ module ActiveRecord
       # Retrieving the connection pool happens a lot, so we cache it in @owner_to_pool_manager.
       # This makes retrieving the connection pool O(1) once the process is warm.
       # When a connection is established or removed, we invalidate the cache.
-      def retrieve_connection_pool(owner, role: ActiveRecord::Base.current_role, shard: ActiveRecord::Base.current_shard)
+      def retrieve_connection_pool(owner, role: ActiveRecord::Base.current_role, shard: ActiveRecord::Base.current_shard, raise: false)
         pool_config = get_pool_manager(owner)&.get_pool_config(role, shard)
-        pool_config&.pool
+        pool = pool_config&.pool
+        if !pool && raise
+          if shard != ActiveRecord::Base.default_shard
+            message = "No connection pool for '#{spec_name}' found for the '#{shard}' shard."
+          elsif ActiveRecord::Base.connection_handler != ActiveRecord::Base.default_connection_handler
+            message = "No connection pool for '#{spec_name}' found for the '#{ActiveRecord::Base.current_role}' role."
+          elsif role != ActiveRecord::Base.default_role
+            message = "No connection pool for '#{spec_name}' found for the '#{role}' role."
+          else
+            message = "No connection pool for '#{spec_name}' found."
+          end
+
+          raise ConnectionNotEstablished, message
+        end
+        pool
       end
 
       private

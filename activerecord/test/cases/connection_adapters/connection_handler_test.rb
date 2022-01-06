@@ -381,7 +381,6 @@ module ActiveRecord
         end
 
         def test_retrieve_connection_pool_copies_schema_cache_from_ancestor_pool
-          @pool.schema_cache = @pool.connection.schema_cache
           @pool.schema_cache.add("posts")
 
           rd, wr = IO.pipe

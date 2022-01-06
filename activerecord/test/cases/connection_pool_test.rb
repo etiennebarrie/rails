@@ -527,7 +527,7 @@ module ActiveRecord
         connection = pool.checkout
         schema_cache = SchemaCache.new connection
         schema_cache.add(:posts)
-        pool.schema_cache = schema_cache
+        pool.set_schema_cache(schema_cache)
 
         pool.with_connection do |conn|
           assert_equal pool.schema_cache.size, conn.schema_cache.size

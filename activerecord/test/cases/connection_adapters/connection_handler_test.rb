@@ -392,6 +392,7 @@ module ActiveRecord
             pool = @handler.retrieve_connection_pool(@owner_name)
             wr.write Marshal.dump pool.schema_cache.size
             wr.close
+            pool.schema_cache.add("accounts") # schema cache in the fork doesn't have a connection
             exit!
           }
 

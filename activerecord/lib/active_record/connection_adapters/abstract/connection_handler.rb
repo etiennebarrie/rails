@@ -222,13 +222,13 @@ module ActiveRecord
         pool = pool_config&.pool
         if !pool && raise
           if shard != ActiveRecord::Base.default_shard
-            message = "No connection pool for '#{spec_name}' found for the '#{shard}' shard."
+            message = "No connection pool for '#{owner}' found for the '#{shard}' shard."
           elsif ActiveRecord::Base.connection_handler != ActiveRecord::Base.default_connection_handler
-            message = "No connection pool for '#{spec_name}' found for the '#{ActiveRecord::Base.current_role}' role."
+            message = "No connection pool for '#{owner}' found for the '#{ActiveRecord::Base.current_role}' role."
           elsif role != ActiveRecord::Base.default_role
-            message = "No connection pool for '#{spec_name}' found for the '#{role}' role."
+            message = "No connection pool for '#{owner}' found for the '#{role}' role."
           else
-            message = "No connection pool for '#{spec_name}' found."
+            message = "No connection pool for '#{owner}' found."
           end
 
           raise ConnectionNotEstablished, message

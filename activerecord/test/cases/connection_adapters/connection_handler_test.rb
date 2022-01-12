@@ -393,12 +393,13 @@ module ActiveRecord
             wr.write Marshal.dump pool.schema_cache.size
             wr.close
             pool.schema_cache.add("accounts") # schema cache in the fork doesn't have a connection
-            exit!
+            exit!(0)
           }
 
           wr.close
 
-          Process.waitpid pid
+          _pid, status = Process.waitpid2 pid
+          assert_predicate status, :success?
           assert_equal @pool.schema_cache.size, Marshal.load(rd.read)
           rd.close
         end

@@ -7,13 +7,13 @@ module ActiveRecord
     class SchemaCacheTest < ActiveRecord::TestCase
       def setup
         @connection       = ActiveRecord::Base.connection
-        @cache            = SchemaCache.new @connection
+        @cache            = SchemaCache.new { @connection }
         @database_version = @connection.get_database_version
       end
 
       def test_yaml_dump_and_load
         # Create an empty cache.
-        cache = SchemaCache.new @connection
+        cache = SchemaCache.new { @connection }
 
         tempfile = Tempfile.new(["schema_cache-", ".yml"])
         # Dump it. It should get populated before dumping.
@@ -34,7 +34,7 @@ module ActiveRecord
       end
 
       def test_cache_path_can_be_in_directory
-        cache = SchemaCache.new @connection
+        cache = SchemaCache.new { @connection }
         filename = "some_dir/schema.json"
         assert cache.dump_to(filename)
       ensure
@@ -43,7 +43,7 @@ module ActiveRecord
 
       def test_yaml_dump_and_load_with_gzip
         # Create an empty cache.
-        cache = SchemaCache.new @connection
+        cache = SchemaCache.new { @connection }
 
         tempfile = Tempfile.new(["schema_cache-", ".yml.gz"])
         # Dump it. It should get populated before dumping.
@@ -170,7 +170,7 @@ module ActiveRecord
 
       def test_marshal_dump_and_load
         # Create an empty cache.
-        cache = SchemaCache.new @connection
+        cache = SchemaCache.new { @connection }
 
         # Populate it.
         cache.add("posts")
@@ -188,7 +188,7 @@ module ActiveRecord
 
       def test_marshal_dump_and_load_via_disk
         # Create an empty cache.
-        cache = SchemaCache.new @connection
+        cache = SchemaCache.new { @connection }
 
         tempfile = Tempfile.new(["schema_cache-", ".dump"])
         # Dump it. It should get populated before dumping.
@@ -211,7 +211,7 @@ module ActiveRecord
         old_ignore = ActiveRecord.schema_cache_ignored_tables
         ActiveRecord.schema_cache_ignored_tables = ["p_schema_migrations"]
         # Create an empty cache.
-        cache = SchemaCache.new @connection
+        cache = SchemaCache.new { @connection }
 
         tempfile = Tempfile.new(["schema_cache-", ".dump"])
         # Dump it. It should get populated before dumping.
@@ -246,7 +246,7 @@ module ActiveRecord
 
       def test_marshal_dump_and_load_with_gzip
         # Create an empty cache.
-        cache = SchemaCache.new @connection
+        cache = SchemaCache.new { @connection }
 
         tempfile = Tempfile.new(["schema_cache-", ".dump.gz"])
         # Dump it. It should get populated before dumping.
@@ -316,7 +316,7 @@ module ActiveRecord
           # calling dump_to will load data sources, but not the rest of the cache
           # so we need to set the cache manually. This essentially mimics the behavior
           # of the Railtie.
-          cache = SchemaCache.new(ActiveRecord::Base.connection)
+          cache = SchemaCache.new { ActiveRecord::Base.connection }
           cache.dump_to(tempfile.path)
           ActiveRecord::Base.connection.schema_cache = cache
 

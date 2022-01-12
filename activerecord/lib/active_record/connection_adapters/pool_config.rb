@@ -6,10 +6,14 @@ module ActiveRecord
       include Mutex_m
 
       attr_reader :db_config, :connection_class, :role, :shard
-      attr_accessor :schema_cache
+      attr_reader :schema_cache
 
       INSTANCES = ObjectSpace::WeakMap.new
       private_constant :INSTANCES
+
+      # connection
+      # connection_pool.retrieve // checkout
+      # pool_config.pool
 
       class << self
         def discard_pools!
@@ -19,12 +23,18 @@ module ActiveRecord
 
       def initialize(connection_class, db_config, role, shard)
         super()
+        set_schema_cache(SchemaCache.new)
         @connection_class = connection_class
         @db_config = db_config
         @role = role
         @shard = shard
         @pool = nil
         INSTANCES[self] = self
+      end
+
+      def set_schema_cache(cache)
+        @schema_cache = cache
+        @schema_cache.connection_provider = -> { pool.connection }
       end
 
       def connection_specification_name

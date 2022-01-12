@@ -10,19 +10,15 @@ require "active_record/connection_adapters/abstract/connection_pool/reaper"
 module ActiveRecord
   module ConnectionAdapters
     module AbstractPool # :nodoc:
-      # Use schema cache dump or connect
-      def schema_cache
-        pool_config_schema_cache || get_schema_cache(connection)
-      end
-
       def get_schema_cache(connection)
-        self.pool_config_schema_cache ||= SchemaCache.new(connection)
-        pool_config_schema_cache.connection = connection
-        pool_config_schema_cache
+        self.schema_cache ||= SchemaCache.new
+        schema_cache.tap do |cache|
+          cache.connection = connection
+        end
       end
 
       def set_schema_cache(cache)
-        self.pool_config_schema_cache = cache
+        pool_config.set_schema_cache(cache)
       end
 
       def lazily_set_schema_cache
@@ -36,7 +32,11 @@ module ActiveRecord
     class NullPool # :nodoc:
       include ConnectionAdapters::AbstractPool
 
-      attr_accessor :pool_config_schema_cache
+      attr_accessor :schema_cache
+
+      def set_schema_cache(cache)
+        self.schema_cache = cache
+      end
 
       def connection_class; end
       def checkin(_); end
@@ -114,7 +114,7 @@ module ActiveRecord
 
       alias_method :connection_klass, :connection_class
       deprecate :connection_klass
-      delegate :schema_cache, :schema_cache=, prefix: true, to: :pool_config
+      delegate :schema_cache, to: :pool_config
 
       # Creates a new ConnectionPool object. +pool_config+ is a PoolConfig
       # object which describes database connection information (e.g. adapter,

@@ -33,15 +33,14 @@ module ActiveRecord
       private_class_method :read
 
       attr_reader :version
-      attr_writer :connection, :connection_provider
+      attr_writer :connection_provider
 
       def connection
-        return @connection if @connection
-        @connection = @connection_provider.call
+        raise ConnectionNotEstablished, "SchemaCache used without being provided a connection" unless @connection_provider
+        @connection_provider.call
       end
 
       def initialize(&block)
-        @connection = nil
         @connection_provider = block
 
         @columns      = {}
@@ -54,7 +53,6 @@ module ActiveRecord
 
       def initialize_dup(other)
         super
-        @connection   = nil
         @columns      = @columns.dup
         @columns_hash = @columns_hash.dup
         @primary_keys = @primary_keys.dup
@@ -76,7 +74,6 @@ module ActiveRecord
       end
 
       def init_with(coder)
-        @connection       = nil
         @columns          = coder["columns"]
         @primary_keys     = coder["primary_keys"]
         @data_sources     = coder["data_sources"]

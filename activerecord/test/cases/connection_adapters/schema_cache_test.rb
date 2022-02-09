@@ -85,7 +85,7 @@ module ActiveRecord
 
       def test_yaml_loads_5_1_dump_without_indexes_still_queries_for_indexes
         cache = SchemaCache.load_from(schema_dump_path)
-        cache.connection = @connection
+        cache.connection_provider = -> { @connection }
 
         assert_queries :any, ignore_none: true do
           assert_equal 1, cache.indexes("posts").size
@@ -94,7 +94,7 @@ module ActiveRecord
 
       def test_yaml_loads_5_1_dump_without_database_version_still_queries_for_database_version
         cache = SchemaCache.load_from(schema_dump_path)
-        cache.connection = @connection
+        cache.connection_provider = -> { @connection }
 
         # We can't verify queries get executed because the database version gets
         # cached in both MySQL and PostgreSQL outside of the schema cache.
@@ -219,7 +219,7 @@ module ActiveRecord
 
         # Load a new cache.
         cache = SchemaCache.load_from(tempfile.path)
-        cache.connection = @connection
+        cache.connection_provider = -> { @connection }
 
         # Assert a table in the cache
         assert cache.data_sources("posts"), "expected posts to be in the cached data_sources"

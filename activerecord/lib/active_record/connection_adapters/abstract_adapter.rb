@@ -97,7 +97,7 @@ module ActiveRecord
         @instrumenter        = ActiveSupport::Notifications.instrumenter
         @logger              = logger
         @config              = config
-        @pool                = ActiveRecord::ConnectionAdapters::NullPool.new
+        @pool                = ActiveRecord::ConnectionAdapters::NullPool.new(self)
         @idle_since          = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         @visitor = arel_visitor
         @statements = build_statement_pool
@@ -565,9 +565,6 @@ module ActiveRecord
         #
         # Prevent @connection's finalizer from touching the socket, or
         # otherwise communicating with its server, when it is collected.
-        if schema_cache.connection == self
-          schema_cache.connection = nil
-        end
       end
 
       # Reset the state of this connection, directing the DBMS to clear

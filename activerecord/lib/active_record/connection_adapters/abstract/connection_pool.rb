@@ -13,7 +13,7 @@ module ActiveRecord
       def get_schema_cache(connection)
         self.schema_cache ||= SchemaCache.new
         schema_cache.tap do |cache|
-          cache.connection = connection
+          cache.connection_provider = -> { connection }
         end
       end
 
@@ -33,6 +33,10 @@ module ActiveRecord
       include ConnectionAdapters::AbstractPool
 
       attr_accessor :schema_cache
+
+      def initialize(connection)
+        self.schema_cache = SchemaCache.new { connection }
+      end
 
       def set_schema_cache(cache)
         self.schema_cache = cache

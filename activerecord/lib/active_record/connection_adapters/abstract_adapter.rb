@@ -153,7 +153,7 @@ module ActiveRecord
         end
 
         @owner = nil
-        @instrumenter = ActiveSupport::Notifications.instrumenter
+        @instrumenter = nil
         @pool = ActiveRecord::ConnectionAdapters::NullPool.new
         @idle_since = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         @visitor = arel_visitor
@@ -1126,7 +1126,8 @@ module ActiveRecord
         end
 
         def log(sql, name = "SQL", binds = [], type_casted_binds = [], statement_name = nil, async: false, &block) # :doc:
-          @instrumenter.instrument(
+          instrumenter = @instrumenter || ActiveSupport::Notifications.instrumenter
+          instrumenter.instrument(
             "sql.active_record",
             sql:               sql,
             name:              name,

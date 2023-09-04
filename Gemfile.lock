@@ -108,7 +108,6 @@ PATH
       bundler (>= 1.15.0)
       railties (= 7.1.0.alpha)
     railties (7.1.0.alpha)
-      actionpack (= 7.1.0.alpha)
       activesupport (= 7.1.0.alpha)
       irb
       rackup (>= 1.0.0)

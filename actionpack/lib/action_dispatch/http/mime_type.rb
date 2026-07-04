@@ -3,9 +3,6 @@
 # :markup: markdown
 
 require "singleton"
-require "active_support/deprecation"
-require "action_dispatch/deprecator"
-require "active_support/core_ext/string/filters"
 
 module Mime
   class Mimes
@@ -63,22 +60,6 @@ module Mime
   @lookup_by_string    = {}
   @lookup_by_extension = {}
 
-  SET = ActiveSupport::Deprecation::DeprecatedObjectProxy.new( # :nodoc:
-    @registry,
-    "Mime::SET is deprecated. Use Mime.symbols to enumerate registered types, or Mime[...] / Mime::Type.lookup to look one up.",
-    ActionDispatch.deprecator,
-  )
-  LOOKUP = ActiveSupport::Deprecation::DeprecatedObjectProxy.new( # :nodoc:
-    @lookup_by_string,
-    "Mime::LOOKUP is deprecated. Use Mime::Type.lookup instead.",
-    ActionDispatch.deprecator,
-  )
-  EXTENSION_LOOKUP = ActiveSupport::Deprecation::DeprecatedObjectProxy.new( # :nodoc:
-    @lookup_by_extension,
-    "Mime::EXTENSION_LOOKUP is deprecated. Use Mime.extensions to enumerate registered extensions, or Mime::Type.lookup_by_extension / Mime[...] to look one up.",
-    ActionDispatch.deprecator,
-  )
-
   class << self
     attr_reader :registry, :lookup_by_string, :lookup_by_extension # :nodoc:
 
@@ -108,28 +89,8 @@ module Mime
       @registry.freeze
       @lookup_by_string.freeze
       @lookup_by_extension.freeze
+      Type.eager_load!
       nil
-    end
-
-    def update # :nodoc:
-      if @registry.frozen?
-        ActionDispatch.deprecator.warn(<<~DEPRECATION.squish)
-          Registering or unregistering a MIME type after the application has been initialized is deprecated.
-          Register custom MIME types from an initializer instead (e.g. config/initializers/mime_types.rb).
-          This will raise a FrozenError in Rails 9.0.
-        DEPRECATION
-        registry, string_lookup, extension_lookup = @registry.dup, @lookup_by_string.dup, @lookup_by_extension.dup
-        yield registry, string_lookup, extension_lookup
-        @registry = registry.freeze
-        @lookup_by_string = string_lookup.freeze
-        @lookup_by_extension = extension_lookup.freeze
-
-        SET.target = @registry
-        LOOKUP.target = @lookup_by_string
-        EXTENSION_LOOKUP.target = @lookup_by_extension
-      else
-        yield @registry, @lookup_by_string, @lookup_by_extension
-      end
     end
   end
 
@@ -230,10 +191,10 @@ module Mime
         @on_change_callbacks << block
       end
 
-      def register_callback(&block)
-        on_change { |mime, registered| block.call(mime) if registered }
+      def eager_load! # :nodoc:
+        @on_change_callbacks = [].freeze
+        nil
       end
-      ActionDispatch.deprecator.deprecate_methods(self, :register_callback)
 
       def lookup(string)
         lookup = Mime.lookup_by_string
@@ -258,11 +219,9 @@ module Mime
       def register(string, symbol, mime_type_synonyms = [], extension_synonyms = [], skip_lookup = false)
         new_mime = Type.new(string, symbol, mime_type_synonyms)
 
-        Mime.update do |registry, string_lookup, extension_lookup|
-          registry << new_mime
-          ([string] + mime_type_synonyms).each { |str| string_lookup[-str] = new_mime } unless skip_lookup
-          ([symbol] + extension_synonyms).each { |ext| extension_lookup[-ext.to_s] = new_mime }
-        end
+        Mime.registry << new_mime
+        ([string] + mime_type_synonyms).each { |str| Mime.lookup_by_string[-str] = new_mime } unless skip_lookup
+        ([symbol] + extension_synonyms).each { |ext| Mime.lookup_by_extension[-ext.to_s] = new_mime }
 
         @on_change_callbacks.each do |callback|
           callback.call(new_mime, true)
@@ -318,11 +277,9 @@ module Mime
       def unregister(symbol)
         symbol = symbol.downcase
         if mime = Mime[symbol]
-          Mime.update do |registry, string_lookup, extension_lookup|
-            registry.delete_if { |v| v.eql?(mime) }
-            string_lookup.delete_if { |_, v| v.eql?(mime) }
-            extension_lookup.delete_if { |_, v| v.eql?(mime) }
-          end
+          Mime.registry.delete_if { |v| v.eql?(mime) }
+          Mime.lookup_by_string.delete_if { |_, v| v.eql?(mime) }
+          Mime.lookup_by_extension.delete_if { |_, v| v.eql?(mime) }
 
           @on_change_callbacks.each do |callback|
             callback.call(mime, false)
